@@ -195,7 +195,7 @@ let chapterCurrent = 1;
 let chapterTotal = conIndexArr.length;
 
 
-loadScript("./data1.js", () => {
+loadScript("./data.js", () => {
   conStr = data;
   conIndexArr = getIndexArr(conStr);
   conArr = getContentArr(conStr);
