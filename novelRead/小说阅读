@@ -1,0 +1,260 @@
+<!-- ctrl + alt + h 打开浏览器调试插件 -->
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>小说标题</title>
+  <script type="text/javascript" src="./main.js"></script>
+  <script src="https://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
+  <style type="text/css">
+    .nav {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      min-width: 700px;
+      min-height: 120px;
+      background-color: #b9f4ba;
+    }
+
+    .input {
+      width: 50px;
+      text-align: center;
+    }
+
+    .inputBtn {
+      margin-right: 20px;
+      padding: 5px 10px;
+      color: #eae7e7;
+      background-color: #1f8521;
+      border: none;
+      cursor: pointer;
+    }
+
+    .content {
+      margin-top: 150px;
+      font-size: 20px;
+    }
+
+    #readText {
+      margin: 20px auto 0 auto;
+      width: 100px;
+      text-align: center;
+      background-color: #eae3d7;
+    }
+
+    .operateFont {
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .highLight {
+      font-weight: bold;
+      color: #a25454;
+      background-color: #d2efd2;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="nav">
+    <div style="text-align: center;font-size: 26px;">
+      <input id="changePage" class="input" type="number" value="1">
+      <input class="inputBtn" type="button" value="跳页" onclick="changePage()">
+      <span id="volumeMinus" class="operateFont" style="padding-right: 10px;">音量减</span>
+      <span id="volume" class="operateFont" style="padding-right: 10px;"></span>
+      <span id="volumeAdd" class="operateFont" style="padding-right: 20px;">音量加</span>
+    </div>
+    <div id="video" class="operateFont" style="text-align: center;font-size: 26px;">
+      <span id="previous" class="operateFont" style="padding-right: 10px;">上一页</span>
+      <span id="page" style="padding-right: 10px;"></span>
+      <span id="next" style="padding-right: 50px;user-select: none;">下一页</span>
+      <span id="videoStart" class="operateFont" style="padding-right: 20px;">播放</span>
+      <span id="videoPause" class="operateFont">未播放不可停</span>
+    </div>
+    <div id="readText">&nbsp;</div>
+  </div>
+  <div id="text" class="content" style="padding-top: 10px;"></div>
+</body>
+
+</html>
+<script type="text/javascript">
+  /* ctrl + alt + h 打开浏览器调试插件 */
+  let html = document.getElementById('text');
+  let innerHTML = html.innerHTML;
+  let volume = 0.7;
+  let text1 = '', text2 = '', text3 = innerHTML;
+
+  function init(first = false) {
+    if (first && typeof (title) != "undefined") {
+      document.title = title;
+    }
+    if (first && localStorage.getItem('num')) {
+      chapterCurrent = localStorage.getItem('num');
+    }
+
+    document.getElementById('volume').innerText = volume;
+    document.getElementById('page').innerText = `${chapterCurrent} / ${chapterTotal}`;
+
+    if (conArr.length > 0) {
+      html.innerText = conArr[chapterCurrent - 1];
+      innerHTML = html.innerHTML;
+      text1 = '', text2 = '';
+      text3 = innerHTML;
+    }
+
+    if (first && conArr.length == 0) {
+      setTimeout(() => {
+        init();
+      }, 500);
+    }
+  }
+
+  function savePage(num) {
+    localStorage.setItem('num', num);
+  }
+
+  function changePage() {
+    if (document.getElementById('changePage').value) {
+      chapterCurrent = document.getElementById('changePage').value;
+      readText();
+      init(true);
+    }
+  }
+
+  init(true);
+  // 音量-start
+  document.getElementById('volumeMinus').onclick = () => {
+    if (volume * 10 > 1) {
+      volume = (volume * 10 - 1) / 10;
+      readText();
+      readText(text3.replaceAll('<br>', ''), volume);
+    }
+    document.getElementById('volume').innerText = volume;
+  }
+  document.getElementById('volumeAdd').onclick = () => {
+    if (volume * 10 < 10) {
+      volume = (volume * 10 + 1) / 10;
+      readText();
+      readText(text3.replaceAll('<br>', ''), volume);
+    }
+    document.getElementById('volume').innerText = volume;
+  }
+  // 音量-end
+
+  // 翻页-start
+  document.getElementById('previous').onclick = () => {
+    if (chapterCurrent > 1) { chapterCurrent--; }
+    init();
+  }
+  document.getElementById('next').onclick = () => {
+    if (chapterCurrent < chapterTotal) { chapterCurrent++; }
+    init();
+  }
+  // 翻页-end
+
+  // 播放-start
+  let videoStart = document.getElementById('videoStart');
+  videoStart.onclick = () => {
+    init();
+    readText(conArr[chapterCurrent - 1].replace(/_目录_.*?】/, ''), volume);
+  }
+  let videoPause = document.getElementById('videoPause');
+  videoPause.onclick = (volume) => {
+    if (videoPause.innerText.includes('可暂停')) {
+      pauseSpeaking();
+    } else {
+      resumeSpeaking(volume);
+    }
+  }
+  /**
+   * 需要在以下网址配置允许连续播放权限
+   * chrome://settings/content/sound
+   */
+  function autoPlay() {
+    chapterCurrent++;
+    if (chapterCurrent > chapterTotal) {
+      chapterCurrent = 1;
+    }
+    init();
+    videoStart.dispatchEvent(new Event('click'));
+  }
+  // 播放-end
+
+  // 播放监听
+  Object.defineProperties(speakObj, {
+    isSpeak: { // 0未播放 1播放中 2暂停 3播放完
+      get: (val) => {
+        return isSpeak;
+      },
+      set: (val) => {
+        isSpeak = val;
+        savePage(chapterCurrent);
+        switch (isSpeak) {
+          case 0:
+            videoStart.innerText = '播放';
+            videoPause.innerText = '未播放不可停';
+            break;
+          case 1:
+            videoStart.innerText = '结束';
+            videoPause.innerText = '播放中可暂停';
+            break;
+          case 2:
+            videoStart.innerText = '结束';
+            videoPause.innerText = '继续';
+            break;
+          case 3:
+            videoStart.innerText = '播放';
+            videoPause.innerText = '已播完不可停';
+            // 自动连播 
+            // if (chapterCurrent > 65) {
+            //   chapterCurrent = 45;
+            // }
+            setTimeout(() => {
+              autoPlay();
+              html.innerHTML = '';
+            }, 1000);
+            break;
+          default:
+            videoStart.innerText = '播放';
+            videoPause.innerText = '暂停';
+            break;
+        }
+      }
+    },
+    textNow: {
+      get: (val) => {
+        return textNow;
+      },
+      set: (val) => {
+        textNow = val;
+        document.getElementById('readText').innerText = val;
+      }
+    },
+    textIndex: {
+      get: (val) => {
+        return textIndex;
+      },
+      set: (val) => {
+        textIndex = val;
+
+        // 实时显示朗读位置  
+        let start = `<span class='highLight'>`, end = '</span>';
+
+        let index = text3.indexOf(textNow);
+        if (index > 0) {
+          text1 = text1 + text2 + text3.substring(0, index);
+          text2 = text3.substring(index, index + 1);
+          text3 = text3.substring(index + 1);
+        }
+
+        html.innerHTML = `${text1} ${start} ${text2} ${end} ${text3}`;
+      }
+    }
+
+  })
+
+</script>
